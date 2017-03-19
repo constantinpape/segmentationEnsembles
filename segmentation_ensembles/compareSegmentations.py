@@ -24,7 +24,7 @@ def compare_segs_same_overseg():
     return diff_edges, rag
 
 
-def render_edges(rag, edges, n_threads = 6):
+def render_edges(rag, edges, n_threads = 1):
 
     from concurrent import futures
     vol = np.zeros(rag.shape, dtype = np.uint32)
@@ -46,9 +46,13 @@ def render_edges(rag, edges, n_threads = 6):
             return True
         return False
 
-    with futures.ThreadPoolExecutor(max_workers = n_threads) as executor:
-        tasks = [render_edge(edge) for edge in rag.edgeIter()]
-        res = [t.result() for t in tasks]
+    # FIXME THIS IS NOT REALLY THREAD-SAFE
+    if n_threads > 1:
+        with futures.ThreadPoolExecutor(max_workers = n_threads) as executor:
+            tasks = [executor.submit(render_edge, edge) for edge in rag.edgeIter()]
+            res = [t.result() for t in tasks]
+    else:
+        res = [render_edge(edge) for edge in rag.edgeIter()]
 
     return vol
 
