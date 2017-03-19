@@ -24,13 +24,15 @@ def compare_segs_same_overseg():
     return diff_edges, rag
 
 
-def render_edges(rag, edges):
+def render_edges(rag, edges, n_threads = 6):
 
+    from concurrent import futures
     vol = np.zeros(rag.shape, dtype = np.uint32)
+    print type(edges)
 
-    for edge in rag.edgeIter():
-
+    def render_edge(edge):
         if edges[edge.id]:
+            print edge.id, '/', rag.edgeNum
             coordinates = rag.edgeCoordinates(edge)
 
             coords_up = np.ceil( coordinates ).astype(np.uint32)
@@ -41,6 +43,12 @@ def render_edges(rag, edges):
 
             vol[coords_up] = 1
             vol[coords_dn] = 1
+            return True
+        return False
+
+    with futures.ThreadPoolExecutor(max_workers = n_threads) as executor:
+        tasks = [render_edge(edge) for edge in rag.edgeIter()]
+        res = [t.result() for t in tasks]
 
     return vol
 
@@ -64,9 +72,6 @@ def compare_segs_same_overseg(segA, segB, overseg):
     return diff_edges, rag
 
 
-def compare_segs_diff_overseg():
-    pass
-
 
 if __name__ == '__main__':
 
@@ -76,8 +81,8 @@ if __name__ == '__main__':
 
         overseg_p = "/home/constantin/Work/neurodata_hdd/cremi/sample_%s/train_block/ws/cremi_sample%s_wsdt_cantorV1.h5" % (sample, sample)
 
-        segA_p_1 = "/home/constantin/Work/home_hdd/results/cremi/validation_it5/sample_A_train_id_0_traintest_0.h5"
-        segA_p_2 = "/home/constantin/Work/home_hdd/results/cremi/validation_it5/sample_A_train_id_0_traintest_1.h5"
+        segA_p_1 = "/home/constantin/Work/home_hdd/results/cremi/validation_it5/sample_%s_train_id_0_traintest_0.h5" % (sample)
+        segA_p_2 = "/home/constantin/Work/home_hdd/results/cremi/validation_it5/sample_%s_train_id_0_traintest_1.h5" % (sample)
 
         segB_p_1 = "/home/constantin/Work/home_hdd/results/cremi/validation_it6/sample_%s_train_id_0_traintest_0.h5" % (sample)
         segB_p_2 = "/home/constantin/Work/home_hdd/results/cremi/validation_it6/sample_%s_train_id_0_traintest_1.h5" % (sample)
