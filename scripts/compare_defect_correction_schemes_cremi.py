@@ -1,7 +1,6 @@
 import os
 import sys
 import vigra
-#from volumina_viewer import volumina_n_layer
 from crop_and_realign_cremi import crop_and_backalign
 
 sys.path.append('..')
@@ -46,5 +45,26 @@ def preprocessing():
             #crop_and_realign_segmentation(sample, corrected)
             make_edgediff(sample, corrected)
 
+
+def view_diffs(sample, corrected_seg = False):
+    from volumina_viewer import volumina_n_layer
+    raw_path = '../data/sample%s+_raw_none.h5' % sample
+    seg_path = '../data/realigned_segs/sample%s_segmentation_realgined_%s.h5' % (sample, str(corrected_seg))
+    edge_diff_path   = '../data/edge_diffs/edgediff_vol_sample%s_%s.h5' % (sample, str(corrected_seg))
+    manual_corr_path = '../data/segmentations_manual_correction/sample_%s_test_lmcresult.h5' % sample
+    auto_corr_path   = '../data/segmentations_automatic_correction/sample_%s+_lmc.h5' % sample
+
+    raw = vigra.readHDF5(raw_path, 'data').astype('float32')
+    seg = vigra.readHDF5(seg_path, 'data')
+    edge_diff = vigra.readHDF5(edge_diff_path, 'data')
+    manual_corr = vigra.readHDF5(manual_corr_path, 'volumes/labels/neuron_ids').transpose( (2,1,0) )
+    auto_corr = vigra.readHDF5(auto_corr_path, 'volumes/labels/neuron_ids').transpose( (2,1,0) )
+
+    volumina_n_layer(
+            [raw, seg, manual_corr, auto_corr, edge_diff],
+            ['raw', 'seg', 'manually corrected segmentation', 'automatially corrected segmentation', 'edge-diff'])
+
+
 if __name__ == '__main__':
-    preprocessing()
+    #preprocessing()
+    view_diffs('A', True)
